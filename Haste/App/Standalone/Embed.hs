@@ -63,9 +63,9 @@ jsMainExists
 -- | The client application JS.
 mkJSMain :: Config -> BS.ByteString
 mkJSMain cfg = BS.concat
-  [ "window['::hasteAppHost']='", BS.pack (host cfg), "';"
+  [ BS.fromStrict (embeddedFile' jsMainFileName)
+  , "window['::hasteAppHost']='", BS.pack (host cfg), "';"
   , "window['::hasteAppPort']=", BS.pack (show $ apiPort cfg), ";"
-  , BS.fromStrict (embeddedFile' jsMainFileName)
   ]
 
 -- | Internal name of the file that contains the actual name of the app JS

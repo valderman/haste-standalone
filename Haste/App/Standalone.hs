@@ -3,8 +3,11 @@
 --   or static Haste.App server/port configuration.
 module Haste.App.Standalone (module Haste.App, runStandaloneApp) where
 import Haste.App
+#ifdef __HASTE__
+import Control.Monad (void)
+import Haste
 import Haste.Foreign
-#ifndef __HASTE__
+#else
 import Haste.App.Standalone.Server
 #endif
 
@@ -13,7 +16,7 @@ import Haste.App.Standalone.Server
 --   the client program JS and any associated static files.
 runStandaloneApp :: App Done -> IO ()
 #ifdef __HASTE__
-runStandaloneApp app = do
+runStandaloneApp app = void $ setTimer (Once 0) $ do
   (host, port) <- getHostAndPort
   runApp (mkConfig host port) app
 
