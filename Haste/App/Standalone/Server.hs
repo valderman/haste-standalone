@@ -35,6 +35,7 @@ data Config = Config
   , host         :: String
   , runMode      :: RunMode
   , dataDir      :: Maybe FilePath
+  , dataDirFirst :: Bool
   , stripDirs    :: Maybe Int
   , forceEmbed   :: Bool
   } deriving Show
@@ -46,6 +47,7 @@ defaultConfig = Config
   , host         = unsafePerformIO autodetectHost
   , runMode      = Server
   , dataDir      = Nothing
+  , dataDirFirst = False
   , stripDirs    = Nothing
   , forceEmbed   = False
   }
@@ -73,7 +75,16 @@ optspec =
   , Option "d" ["data-directory"]
     (ReqArg (\d c -> c {dataDir = Just d}) "DIR") $
     "Directory from which to serve static files.\n" ++
+    "If an embedded file exists in DIR as well, the embedded version will" ++
+    "shadow the one in DIR.\n" ++
+    "This means that `/', `/index.html', and the client JavaScript will " ++
+    "always be served as their embedded versions.\n" ++
+    "Use `--override-embedded' to allow files in DIR to shadow embedded " ++
+    "ones.\n" ++
     "Default: none"
+  , Option "o" ["override-embedded"]
+    (NoArg (\c -> c {dataDirFirst = True})) $
+    "Allow files from the data directory to shadow embedded files."
   , Option "e" ["embed"]
     (ReqArg (\js c -> c {runMode = Embed js}) "JS") $
     "Embed JS as the Haste.App client JavaScript file for this " ++
@@ -182,31 +193,48 @@ runServer cfg app = do
 -- | Find and return a file corresponding to the given path.
 --   TODO: cache files to avoid having to call 'embeddedFile' all the time.
 findFile :: Config -> FilePath -> IO Response
-findFile cfg path = do
-  mabspath <- case dataDir cfg of
-    Just d -> do
-      -- Check that path exists
-      mp <- catch (Just <$> (makeAbsolute (d </> path) >>= canonicalizePath))
-                  (\(SomeException _) -> pure Nothing)
+findFile cfg path
+  | dataDirFirst cfg = do
+    mf <- findDataFile (dataDir cfg) path
+    case (mf, findEmbeddedFile path) of
+      (Just f, _) -> pure $ responseFile ok200 [] f Nothing
+      (_, Just f) -> pure $ responseLBS ok200 [] f
+      _           -> pure $ responseLBS status404 [] "404"
+  | otherwise = do
+    case findEmbeddedFile path of
+      Just f -> pure $ responseLBS ok200 [] f
+      _      -> do
+        mf <- findDataFile (dataDir cfg) path
+        case mf of
+          Just f -> pure $ responseFile ok200 [] f Nothing
+          _      -> pure $ responseLBS status404 [] "404"
 
-      -- Check that path is inside data directory
-      datadir <- makeAbsolute d >>= canonicalizePath
-      let index = fmap (</> "index.html") mp
-      case mp of
-        Just path'
-          | datadir == path'                 -> pure index
-          | and $ zipWith (==) datadir path' -> pure mp
-        _                                    -> pure Nothing
-    _ -> do
-      pure Nothing
+-- | Find an embedded file. Requests to @/@ and @/index.html@ always succeed.
+findEmbeddedFile :: FilePath -> Maybe BS.ByteString
+findEmbeddedFile "" =
+  Just $ maybe defaultHTML BS.fromStrict (embeddedFile "index.html")
+findEmbeddedFile "index.html" =
+  Just $ maybe defaultHTML BS.fromStrict (embeddedFile "index.html")
+findEmbeddedFile path =
+  BS.fromStrict <$> embeddedFile path
 
-  -- Files in data directory override embedded files of the same name
-  case (path, mabspath, embeddedFile path) of
-    (_, (Just abspath), _) -> pure $ responseFile ok200 [] abspath Nothing
-    (_, _, Just x)         -> pure $ responseLBS ok200 [] (BS.fromStrict x)
-    ("", _, _)             -> pure $ responseLBS ok200 [] defaultHTML
-    ("index.html", _, _)   -> pure $ responseLBS ok200 [] defaultHTML
-    _                      -> pure $ responseLBS status404 [] "404"
+-- | Find a file in the specified data directory.
+findDataFile :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
+findDataFile (Just datadir) path = do
+  -- Check that path exists
+  mp <- catch (Just <$> (makeAbsolute (datadir </> path) >>= canonicalizePath))
+              (\(SomeException _) -> pure Nothing)
+
+  -- Check that path is inside data directory
+  datadir' <- makeAbsolute datadir >>= canonicalizePath
+  let index = fmap (</> "index.html") mp
+  case mp of
+    Just path'
+      | datadir' == path'                 -> pure index
+      | and $ zipWith (==) datadir' path' -> pure mp
+    _                                     -> pure Nothing
+findDataFile _ _ = do
+  pure Nothing
 
 -- | Default HTML skeleton.
 defaultHTML :: BS.ByteString
