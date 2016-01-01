@@ -35,6 +35,9 @@ runServer cfg app = do
                        "information on how to embed the\nclient JavaScript."
     exitFailure
 
+  let hoststr = "http://" ++ host cfg ++ ":" ++ show (httpPort cfg)
+  putStrLn $ "Application started on " ++ hoststr
+
   _ <- forkIO $ runApp (mkConfig (host cfg) (apiPort cfg)) app
   let jsMain = mkJSMain cfg
   run (httpPort cfg) $ \req respond -> do
