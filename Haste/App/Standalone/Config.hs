@@ -68,7 +68,7 @@ optspec =
   , Option "d" ["data-directory"]
     (ReqArg (\d c -> c {dataDir = Just d}) "DIR") $
     "Directory from which to serve static files.\n" ++
-    "If an embedded file exists in DIR as well, the embedded version will" ++
+    "If an embedded file exists in DIR as well, the embedded version will " ++
     "shadow the one in DIR.\n" ++
     "This means that `/' and `/index.html' will " ++
     "always be served as their embedded versions.\n" ++
