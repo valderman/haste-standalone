@@ -29,11 +29,11 @@ runStandaloneServer app = do
 runServer :: Config -> App Done -> IO ()
 runServer cfg app = do
   unless (jsMainExists) $ do
-      hPutStrLn stderr $ "This executable does not seem to contain a " ++
-                         "Haste.App client JavaScript program."
-      hPutStrLn stderr $ "Please re-run it with the `--help' flag for " ++
-                         "information on how to embed the\nclient JavaScript."
-      exitFailure
+    hPutStrLn stderr $ "This executable does not seem to contain a " ++
+                       "Haste.App client JavaScript program."
+    hPutStrLn stderr $ "Please re-run it with the `--help' flag for " ++
+                       "information on how to embed the\nclient JavaScript."
+    exitFailure
 
   _ <- forkIO $ runApp (mkConfig (host cfg) (apiPort cfg)) app
   let jsMain = mkJSMain cfg
