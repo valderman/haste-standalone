@@ -28,6 +28,7 @@ runStandaloneServer app = do
 -- | Start the HTTP server serving up the application.
 runServer :: Config -> App Done -> IO ()
 runServer cfg app = do
+  -- Check that we at least have a main JS file before running
   unless (jsMainExists) $ do
     hPutStrLn stderr $ "This executable does not seem to contain a " ++
                        "Haste.App client JavaScript program."
@@ -35,6 +36,7 @@ runServer cfg app = do
                        "information on how to embed the\nclient JavaScript."
     exitFailure
 
+  -- Set up working directory and print diagnostics
   setCurrentDirectory (workDir cfg)
   let hoststr = "http://" ++ host cfg ++ ":" ++ show (httpPort cfg)
   putStrLn $ "Application started on " ++ hoststr
@@ -42,7 +44,7 @@ runServer cfg app = do
   _ <- forkIO $ runApp (mkConfig (host cfg) (apiPort cfg)) app
   let jsMain = mkJSMain cfg
   run (httpPort cfg) $ \req respond -> do
-    case T.unpack (T.concat (pathInfo req)) of
+    case T.unpack (T.intercalate "/" (pathInfo req)) of
       -- Haste.App JS file is always served embedded
       path | path == jsMainFileName -> respond $ responseLBS ok200 [] jsMain
            | otherwise              -> findFile cfg path >>= respond
