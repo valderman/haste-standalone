@@ -35,6 +35,7 @@ runServer cfg app = do
                        "information on how to embed the\nclient JavaScript."
     exitFailure
 
+  setCurrentDirectory (workDir cfg)
   let hoststr = "http://" ++ host cfg ++ ":" ++ show (httpPort cfg)
   putStrLn $ "Application started on " ++ hoststr
 
@@ -70,7 +71,7 @@ findDataFile :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
 findDataFile (Just datadir) path = do
   -- Check that path exists
   mp <- catch (Just <$> (makeAbsolute (datadir </> path) >>= canonicalizePath))
-              (\(SomeException _) -> pure Nothing)
+              (\(SomeException s) -> pure Nothing)
 
   -- Check that path is inside data directory
   datadir' <- makeAbsolute datadir >>= canonicalizePath

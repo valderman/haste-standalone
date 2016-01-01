@@ -2,6 +2,7 @@
 module Haste.App.Standalone.Config where
 import Network.Info
 import System.Console.GetOpt
+import System.Directory (makeAbsolute, canonicalizePath)
 import System.Environment
 import System.Exit
 import System.IO
@@ -22,6 +23,7 @@ data Config = Config
   , host         :: String
   , runMode      :: RunMode
   , dataDir      :: Maybe FilePath
+  , workDir      :: FilePath
   , dataDirFirst :: Bool
   , stripDirs    :: Maybe Int
   , forceEmbed   :: Bool
@@ -34,6 +36,7 @@ defaultConfig = Config
   , host         = unsafePerformIO autodetectHost
   , runMode      = Server
   , dataDir      = Nothing
+  , workDir      = "."
   , dataDirFirst = False
   , stripDirs    = Nothing
   , forceEmbed   = False
@@ -72,7 +75,12 @@ optspec =
     "Use `--override-embedded' to allow files in DIR to shadow embedded " ++
     "ones.\n" ++
     "Default: none"
-    
+
+  , Option "w" ["working-directory"]
+    (ReqArg (\d c -> c {workDir = d}) "DIR") $
+    "Change working directory to DIR before starting the server.\n" ++
+    "Default: ."
+
   , Option "o" ["override-embedded"]
     (NoArg (\c -> c {dataDirFirst = True})) $
     "Allow files from the data directory to shadow embedded files.\n" ++
@@ -119,10 +127,16 @@ help = usageInfo helpHeader optspec
 -- | Read configuration from command line and parse it.
 getConfig :: IO (Config, [FilePath])
 getConfig = do
-  args <- getArgs
-  case getOpt Permute optspec args of
-    (opts, fs, []) -> return ((foldr (flip (.)) (id) opts) defaultConfig, fs)
-    (_, _, errs)   -> mapM_ (hPutStr stderr) errs >> exitFailure
+    args <- getArgs
+    case getOpt Permute optspec args of
+      (opts, fs, []) -> do
+        let cfg = foldr (flip (.)) (id) opts defaultConfig
+        wd <- fixPath (workDir cfg)
+        dd <- maybe (pure Nothing) (fmap Just . fixPath) (dataDir cfg)
+        return (cfg {workDir = wd, dataDir = dd}, fs)
+      (_, _, errs)   -> mapM_ (hPutStr stderr) errs >> exitFailure
+  where
+    fixPath p = makeAbsolute p >>= canonicalizePath
 
 -- | Attempt to autodetect the host we're currently running on.
 --   Defaults to @localhost@ if no interface could be detected.
