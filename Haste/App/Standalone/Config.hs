@@ -12,6 +12,7 @@ data RunMode
   = Server
   | PrintAndQuit String
   | Embed FilePath
+  | ListEmbedded
     deriving Show
 
 -- | Configuration for a standalone application.
@@ -94,7 +95,11 @@ optspec =
     "Strip the N first leading directories of file names provided with " ++
     "`--embed'.\n" ++
     "Default: 0."
-    
+
+  , Option "l" ["list-files"]
+    (NoArg (\c -> c {runMode = ListEmbedded})) $
+    "List all files embedded in this executable."
+
   , Option "?" ["help"]
     (NoArg (\c -> c {runMode = PrintAndQuit help})) $
     "Print this help message and exit."

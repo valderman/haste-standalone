@@ -18,11 +18,12 @@ import Haste.App.Standalone.Embed
 -- | Run application with settings obtained from the command line.
 runStandaloneServer :: App Done -> IO ()
 runStandaloneServer app = do
-    (cfg, files) <- getConfig
-    case runMode cfg of
-      Server           -> runServer cfg app
-      Embed js         -> embedFiles cfg js files
-      PrintAndQuit msg -> putStr msg >> exitSuccess
+  (cfg, files) <- getConfig
+  case runMode cfg of
+    Server           -> runServer cfg app
+    Embed js         -> embedFiles cfg js files
+    ListEmbedded     -> mapM_ putStrLn embeddedFiles >> exitSuccess
+    PrintAndQuit msg -> putStr msg >> exitSuccess
 
 -- | Start the HTTP server serving up the application.
 runServer :: Config -> App Done -> IO ()

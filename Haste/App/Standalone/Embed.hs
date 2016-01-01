@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Creating and reading file embeddings.
 module Haste.App.Standalone.Embed
-  ( embedFiles , findEmbeddedFile
+  ( embedFiles , findEmbeddedFile, embeddedFiles
   , mkJSMain, jsMainExists , jsMainFileName
   ) where
 import Control.Monad
@@ -15,6 +15,10 @@ import System.FilePath
 import System.IO
 import System.IO.Temp
 import Haste.App.Standalone.Config
+
+-- | List all files embedded in this executable.
+embeddedFiles :: [FilePath]
+embeddedFiles = filter (/= jsFileNameFileName) $ listBundleFiles myBundle  
 
 -- | Embed the given JS and auxiliary files into this executable.
 embedFiles :: Config -> FilePath -> [FilePath] -> IO ()
