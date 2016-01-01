@@ -98,11 +98,12 @@ optspec =
 
   , Option "l" ["list-files"]
     (NoArg (\c -> c {runMode = ListEmbedded})) $
-    "List all files embedded in this executable."
+    "List all files embedded in this executable. The app JavaScript file " ++
+    "will be prefixed with an asterisk."
 
   , Option "?" ["help"]
     (NoArg (\c -> c {runMode = PrintAndQuit help})) $
-    "Print this help message and exit."
+    "Print this help message."
   ]
 
 helpHeader :: String

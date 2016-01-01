@@ -18,7 +18,12 @@ import Haste.App.Standalone.Config
 
 -- | List all files embedded in this executable.
 embeddedFiles :: [FilePath]
-embeddedFiles = filter (/= jsFileNameFileName) $ listBundleFiles myBundle  
+embeddedFiles =
+    [markAppFile f | f <- listBundleFiles myBundle, f /= jsFileNameFileName]
+  where
+    markAppFile f
+      | f == jsMainFileName = '*':f
+      | otherwise           = f
 
 -- | Embed the given JS and auxiliary files into this executable.
 embedFiles :: Config -> FilePath -> [FilePath] -> IO ()
