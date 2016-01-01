@@ -1,7 +1,14 @@
 name:                haste-standalone
 version:             0.1.0.0
-synopsis:            Create Haste.App web applications without a web server or any static configuration.
--- description:         
+synopsis:            Create zero configuration standalone Haste.App web apps.
+description:         This package lets you create Haste.App web applications
+                     which don't rely on static configuration or the presence
+                     of a web server. JavaScript and static files are served
+                     by the server binary, which also provides the JavaScript
+                     client with its configuration on launch.
+                     Server host, port and other information is provided as
+                     command line options, or autodetected by the library
+                     when necessary.
 homepage:            https://github.com/valderman/haste-standalone
 license:             MIT
 license-file:        LICENSE
@@ -41,3 +48,5 @@ library
       Haste.App.Standalone.Embed
   default-language:
     Haskell2010
+  ghc-options:
+    -Wall
