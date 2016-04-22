@@ -3,6 +3,11 @@ haste-standalone
 Create zero configuration web apps with Haste.App that don't require a web
 server.
 
+Installation
+------------
+
+`cabal install /path/to/cloned/haste-standalone`
+
 
 Usage
 -----
