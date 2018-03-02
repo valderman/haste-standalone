@@ -26,18 +26,18 @@ instance Node Server where
   endpoint _ = unsafePerformIO $ readIORef endpointRef
 
 -- | Run application with settings obtained from the command line.
-runStandaloneServer :: Client () -> IO ()
-runStandaloneServer app = do
+runStandaloneServer :: [NodeConfig] -> Client () -> IO ()
+runStandaloneServer nodes app = do
   (cfg, files) <- getConfig
   case runMode cfg of
-    Server           -> runServer cfg app
+    Server           -> runServer nodes cfg app
     Embed js         -> embedFiles cfg js files
     ListEmbedded     -> mapM_ putStrLn embeddedFiles >> exitSuccess
     PrintAndQuit msg -> putStr msg >> exitSuccess
 
 -- | Start the HTTP server serving up the application.
-runServer :: Config -> Client () -> IO ()
-runServer cfg app = do
+runServer :: [NodeConfig] -> Config -> Client () -> IO ()
+runServer nodes cfg app = do
   -- Check that we at least have a main JS file before running
   unless (jsMainExists) $ do
     hPutStrLn stderr $ "This executable does not seem to contain a " ++
@@ -54,7 +54,7 @@ runServer cfg app = do
   writeIORef endpointRef $ remoteEndpoint (host cfg)
                                           (apiPort cfg)
                                           (Proxy :: Proxy Server)
-  _ <- forkIO $ runApp [start (Proxy :: Proxy Server)] app
+  _ <- forkIO $ runApp (start (Proxy :: Proxy Server):nodes) app
   let jsMain = mkJSMain cfg
   run (httpPort cfg) $ \req respond -> do
     case T.unpack (T.intercalate "/" (pathInfo req)) of
