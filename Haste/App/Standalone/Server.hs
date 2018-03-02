@@ -1,10 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Haste.App.Standalone.Server (runStandaloneServer) where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import qualified Data.Text as T
-import Haste.App hiding (defaultConfig)
+import Haste.App
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp
@@ -14,9 +15,18 @@ import System.FilePath
 import System.IO
 import Haste.App.Standalone.Config
 import Haste.App.Standalone.Embed
+import System.IO.Unsafe
+import Data.IORef
+
+{-# NOINLINE endpointRef #-}
+endpointRef :: IORef Endpoint
+endpointRef = unsafePerformIO $ newIORef (error "endpoint not initialized")
+
+instance Node Server where
+  endpoint _ = unsafePerformIO $ readIORef endpointRef
 
 -- | Run application with settings obtained from the command line.
-runStandaloneServer :: App Done -> IO ()
+runStandaloneServer :: Client () -> IO ()
 runStandaloneServer app = do
   (cfg, files) <- getConfig
   case runMode cfg of
@@ -26,7 +36,7 @@ runStandaloneServer app = do
     PrintAndQuit msg -> putStr msg >> exitSuccess
 
 -- | Start the HTTP server serving up the application.
-runServer :: Config -> App Done -> IO ()
+runServer :: Config -> Client () -> IO ()
 runServer cfg app = do
   -- Check that we at least have a main JS file before running
   unless (jsMainExists) $ do
@@ -41,7 +51,10 @@ runServer cfg app = do
   let hoststr = "http://" ++ host cfg ++ ":" ++ show (httpPort cfg)
   putStrLn $ "Application started on " ++ hoststr
 
-  _ <- forkIO $ runApp (mkConfig (host cfg) (apiPort cfg)) app
+  writeIORef endpointRef $ remoteEndpoint (host cfg)
+                                          (apiPort cfg)
+                                          (Proxy :: Proxy Server)
+  _ <- forkIO $ runApp [start (Proxy :: Proxy Server)] app
   let jsMain = mkJSMain cfg
   run (httpPort cfg) $ \req respond -> do
     case T.unpack (T.intercalate "/" (pathInfo req)) of
@@ -73,7 +86,7 @@ findDataFile :: Maybe FilePath -> FilePath -> IO (Maybe FilePath)
 findDataFile (Just datadir) path = do
   -- Check that path exists
   mp <- catch (Just <$> (makeAbsolute (datadir </> path) >>= canonicalizePath))
-              (\(SomeException s) -> pure Nothing)
+              (\(SomeException _) -> pure Nothing)
 
   -- Check that path is inside data directory
   datadir' <- makeAbsolute datadir >>= canonicalizePath

@@ -53,18 +53,18 @@ optspec =
     (ReqArg (\p c -> c {apiPort = readWithDefault (apiPort c) p}) "PORT") $
     "Port to use for internal app communication.\n" ++
     "Default: 24601"
-    
+
   , Option "h" ["host"]
     (ReqArg (\h c -> c {host = h}) "HOST") $
     "Host from which this application is served.\n" ++
     "Default: autodetect"
-    
+
   , Option "p" ["http-port"]
     (ReqArg (\p c -> c {httpPort = readWithDefault (httpPort c) p}) "PORT") $
     "Port on which users can access the application through their web " ++
     "browser.\n" ++
     "Default: 8080"
-    
+
   , Option "d" ["data-directory"]
     (ReqArg (\d c -> c {dataDir = Just d}) "DIR") $
     "Directory from which to serve static files.\n" ++
@@ -85,19 +85,19 @@ optspec =
     (NoArg (\c -> c {dataDirFirst = True})) $
     "Allow files from the data directory to shadow embedded files.\n" ++
     "The Haste.App client JavaScript program can never be shadowed, however."
-    
+
   , Option "e" ["embed"]
     (ReqArg (\js c -> c {runMode = Embed js}) "JS") $
     "Embed JS as the Haste.App client JavaScript file for this " ++
     "application.\n" ++
     "Any non-option arguments are interpreted as file " ++
     "names to embed alongside JS."
-    
+
   , Option "f" ["force"]
     (NoArg (\c -> c {forceEmbed = True})) $
     "Overwrite any JavaScript and static files already embedded in this " ++
     "executable.\n"
-    
+
   , Option "s" ["strip-dirs"]
     (ReqArg (\n c -> c {stripDirs = Just (readWithDefault 0 n)}) "N") $
     "Strip the N first leading directories of file names provided with " ++

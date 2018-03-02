@@ -3,10 +3,6 @@ haste-standalone
 Create zero configuration web apps with Haste.App that don't require a web
 server.
 
-**Note that haste-standalone has been merged into
-[Haste.App](http://github.com/valderman/haste-app) -- unless you are using
-Haste version 0.5.x or older, you should not be using this repository!**
-
 Installation
 ------------
 
